@@ -7,7 +7,7 @@
     }
     else if (typeof exports === 'object') {
         // CommonJS
-        return factory();
+        module.exports = factory();
     } else {
         // Browser globals
         window.rangeslider = factory();
@@ -328,7 +328,7 @@
             return +(value).toFixed(toFixed);
         }
 
-        function setPosition (pos) {
+        function setPosition (pos, omitEv) {
             var value, left;
 
             // Snapping steps
@@ -338,7 +338,7 @@
             // Update ui
             fill.style.width = (left + grabX) + 'px';
             handle.style.left = left + 'px';
-            setValue(value);
+            setValue(value, omitEv);
 
             // Update globals
             position = left;
@@ -347,7 +347,7 @@
             options.onSlide(left, value);
         }
 
-        function setValue (value) {
+        function setValue (value, omitEv) {
             if (value === oldValue) {
                 return;
             }
@@ -355,12 +355,14 @@
             // Set the new value and fire the `input` event
             element.value = value;
 
-            options.changeEvent.forEach(function (name) {
-                var event = document.createEvent('HTMLEvents');
-                event.initEvent(name, true, true);
-                event.origin = rangeId;
-                element.dispatchEvent(event);
-            });
+            if (!omitEv) {
+                options.changeEvent.forEach(function (name) {
+                    var event = document.createEvent('HTMLEvents');
+                    event.initEvent(name, true, true);
+                    event.origin = rangeId;
+                    element.dispatchEvent(event);
+                });
+            }
         }
 
         function handleChange (e) {
@@ -370,7 +372,7 @@
             }
 
             var pos = getPositionFromValue(element.value);
-            setPosition(pos);
+            setPosition(pos, true);
         }
 
         function destroy() {

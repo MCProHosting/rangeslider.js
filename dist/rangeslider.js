@@ -1,4 +1,4 @@
-/*! rangeslider.js - v1.2.1 | (c) 2015 @andreruffert | MIT license | https://github.com/andreruffert/rangeslider.js */
+/*! rangeslider.js-mini - v0.0.1 | (c) 2015 @andreruffert | MIT license | https://github.com/MCProHosting/rangeslider.js-mini */
 (function(factory) {
     'use strict';
 
@@ -8,7 +8,7 @@
     }
     else if (typeof exports === 'object') {
         // CommonJS
-        return factory();
+        module.exports = factory();
     } else {
         // Browser globals
         window.rangeslider = factory();
@@ -29,6 +29,7 @@
     function noop () {}
 
     var inputrange = supportsRange(),
+        rangeId = 'rangeslider',
         defaults = {
             polyfill: true,
             rangeClass: 'rangeslider',
@@ -38,6 +39,7 @@
             startEvent: ['mousedown', 'touchstart', 'pointerdown'],
             moveEvent: ['mousemove', 'touchmove', 'pointermove'],
             endEvent: ['mouseup', 'touchend', 'pointerup'],
+            changeEvent: ['change', 'input'],
             onInit: noop,
             onSlide: noop,
             onSlideEnd: noop
@@ -158,7 +160,7 @@
     }
 
     /**
-     * Listens to many events on the object, dispatching
+     * Un/Listens to many events on the object, dispatching
      * them to the function.
      * @param  {Node}     obj
      * @param  {[]String} events
@@ -169,23 +171,24 @@
             obj.addEventListener(ev, fn);
         });
     }
+    function unlisten(obj, events, fn) {
+        events.forEach(function (ev) {
+            obj.removeEventListener(ev, fn);
+        });
+    }
 
     /**
-     * Creates a new element (with the given tag) and appends
-     * it to the container.
-     * @param  {Node} container
+     * Creates a new element with the given tag and attributes.
+     *
      * @param  {String} tag
      * @param  {Object.<String, *>} attrs
-     * @param  {String} [where=beforeend]
      * @return {Node}
      */
-    function createEl (container, tag, attrs, where) {
+    function createEl (tag, attrs) {
         var e = document.createElement(tag);
         for (var key in attrs) {
             e.setAttribute(key, attrs[key]);
         }
-        container.insertAdjacentHTML(where || 'beforeend', e);
-
         return e;
     }
 
@@ -221,13 +224,16 @@
         }
 
         // Add in the elements
-        var range  = createEl(element, 'div', { class: options.rangeClass }, 'afterend');
-        var handle = createEl(handle, 'div', { class: options.handleClass });
-        var fill   = createEl(range, 'div', { class: options.fillClass });
+        var range  = createEl('div', { class: options.rangeClass }, 'afterend');
+        var handle = createEl('div', { class: options.handleClass });
+        var fill   = createEl('div', { class: options.fillClass });
 
-        var toFixed = (this.step + '').replace('.', '').length - 1;
+        range.appendChild(fill);
+        range.appendChild(handle);
+        element.parentNode.insertBefore(range, element);
 
-        var grabX, maxHandleX, handleWidth, max, min, step, oldValue, position, rangeWidth;
+        var grabX, maxHandleX, handleWidth, max, min, step,
+            oldValue, position, rangeWidth, toFixed;
 
         // visually hide the input
         applyStyle(element, {
@@ -251,6 +257,7 @@
             maxHandleX     = rangeWidth - handleWidth;
             grabX          = handleWidth / 2;
             position       = getPositionFromValue(oldValue);
+            toFixed        = (step + '').replace('.', '').length - 1;
 
             // Consider disabled state
             if (element.disabled) {
@@ -269,9 +276,11 @@
         }
 
         function handleEnd (e) {
-            e.preventDefault();
-            document.removeEventListener(options.moveEvent, handleMove);
-            document.removeEventListener(options.endEvent, handleEnd);
+            if (e) {
+                e.preventDefault();
+            }
+            unlisten(document, options.moveEvent, handleMove);
+            unlisten(document, options.endEvent, handleEnd);
 
             options.onSlideEnd(position, oldValue);
         }
@@ -320,7 +329,7 @@
             return +(value).toFixed(toFixed);
         }
 
-        function setPosition (pos) {
+        function setPosition (pos, omitEv) {
             var value, left;
 
             // Snapping steps
@@ -330,7 +339,7 @@
             // Update ui
             fill.style.width = (left + grabX) + 'px';
             handle.style.left = left + 'px';
-            setValue(value);
+            setValue(value, omitEv);
 
             // Update globals
             position = left;
@@ -339,7 +348,7 @@
             options.onSlide(left, value);
         }
 
-        function setValue (value) {
+        function setValue (value, omitEv) {
             if (value === oldValue) {
                 return;
             }
@@ -347,25 +356,46 @@
             // Set the new value and fire the `input` event
             element.value = value;
 
-            var event = document.createEvent('HTMLEvents');
-            event.initEvent('change', false, true);
-            element.dispatchEvent(event);
+            if (!omitEv) {
+                options.changeEvent.forEach(function (name) {
+                    var event = document.createEvent('HTMLEvents');
+                    event.initEvent(name, true, true);
+                    event.origin = rangeId;
+                    element.dispatchEvent(event);
+                });
+            }
+        }
+
+        function handleChange (e) {
+            // Ignore events triggered by the slider itself.
+            if (e.origin === rangeId) {
+                return;
+            }
+
+            var pos = getPositionFromValue(element.value);
+            setPosition(pos, true);
         }
 
         function destroy() {
             handleEnd();
             window.removeEventListener('resize', update);
+            unlisten(element, options.changeEvent, handleChange);
             element.removeAttribute('style');
             range.parentNode.removeChild(range);
         }
 
 
         window.addEventListener('resize', update);
+        listen(element, options.changeEvent, handleChange);
 
-        listen(element, options.startEvent, function (e) {
+        listen(range, options.startEvent, function (e) {
             e.preventDefault();
-            document.addEventListener(options.moveEvent, handleMove);
-            document.addEventListener(options.endEvent, handleEnd);
+            if (element.disabled) {
+                return;
+            }
+
+            listen(document, options.moveEvent, handleMove);
+            listen(document, options.endEvent, handleEnd);
 
             var posX    = getRelativePosition(e),
                 rangeX  = element.getBoundingClientRect().left,
@@ -377,6 +407,7 @@
                 grabX = posX - handleX;
             }
         });
+
 
         update(true);
 
