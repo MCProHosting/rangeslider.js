@@ -1,33 +1,25 @@
 # rangeslider.js
-[![Built with Grunt](https://cdn.gruntjs.com/builtwith.png)](http://gruntjs.com/) [![rangeslider.js](http://img.shields.io/badge/rangeslider-.js-00ff00.svg)](http://andreruffert.github.io/rangeslider.js/) [![Build Status](https://travis-ci.org/andreruffert/rangeslider.js.svg?branch=develop)](https://travis-ci.org/andreruffert/rangeslider.js) [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/andreruffert/rangeslider.js)
 
-> Simple, small and fast JavaScript/jQuery polyfill for the HTML5 `<input type="range">` slider element.
-
-Check out the [examples](http://andreruffert.github.io/rangeslider.js/).
-
-* Touchscreen friendly
-* Recalculates `onresize` so suitable for use within responsive designs
-* Small and fast
-* Supports all major browsers including IE8+
-
-## Install
-Install with [Bower](http://bower.io/):
-``bower install --save rangeslider.js``
-
-Install with [npm](https://www.npmjs.org/):
-``npm install --save rangeslider.js``
-
-## Usage
+This is a fork of [rangeslider.js](https://github.com/andreruffert/rangeslider.js), dropping its dependency on jQuery and nearly halving the filesize of the plugin itself.
 
 ```
-// Initialize a new plugin instance for all
-// e.g. $('input[type="range"]') elements.
+Minified and gzipped sizes:
 
-$('input[type="range"]').rangeslider();
+Before: 2468 bytes (rangeslider) + 37298 bytes (jquery) = 39766 bytes
+After:  1641 bytes (rangeslider)                        = 1641 bytes
+
+Saved 38125 bytes (96%).
 ```
 
-For more informations check out the [website's section](http://andreruffert.github.io/rangeslider.js/#usage). For support visit the [gitter room](https://gitter.im/andreruffert/rangeslider.js).
+Usage is similar, but slightly different. Same options and everything, but rather than calling `$(el).rangeslider`, it looks like this:
 
+```js
+var slider = rangeslider(element, {
+    polyfill: false
+    // ...
+});
 
-## License
-MIT © [André Ruffert](http://andreruffert.com)
+slider.update(true); // instead of $(el).rangeslider('update', true);
+
+slider.destroy(); // instead of $(el).rangeslider('destroy');
+```
