@@ -271,6 +271,7 @@
         function handleMove (e) {
             e.preventDefault();
             var posX = getRelativePosition(e);
+            range.classList.add('rangeslider__focus');
             setPosition(posX - grabX);
         }
 
@@ -278,6 +279,7 @@
             if (e) {
                 e.preventDefault();
             }
+            range.classList.remove('rangeslider__focus');
             unlisten(document, options.moveEvent, handleMove);
             unlisten(document, options.endEvent, handleEnd);
 
