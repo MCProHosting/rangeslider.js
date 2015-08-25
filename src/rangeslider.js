@@ -243,7 +243,7 @@
             opacity: '0'
         });
 
-        function update (updateAttributes) {
+        function update (updateAttributes, omitEv) {
             if (updateAttributes === true) {
                 min      = parseFloat(element.getAttribute('min') || 0);
                 max      = parseFloat(element.getAttribute('max') || 100);
@@ -265,7 +265,7 @@
                 range.classList.remove(options.disabledClass);
             }
 
-            setPosition(position);
+            setPosition(position, omitEv);
         }
 
         function handleMove (e) {
