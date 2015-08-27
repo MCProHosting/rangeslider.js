@@ -41,6 +41,7 @@
             changeEvent: ['change', 'input'],
             onInit: noop,
             onSlide: noop,
+            onSlideStart: noop,
             onSlideEnd: noop
         };
 
@@ -407,6 +408,8 @@
             if (posX >= handleX && posX < handleX + handleWidth) {
                 grabX = posX - handleX;
             }
+
+            options.onSlideStart();
         });
 
 
