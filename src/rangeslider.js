@@ -233,7 +233,7 @@
         element.parentNode.insertBefore(range, element);
 
         var grabX, maxHandleX, handleWidth, max, min, step,
-            oldValue, position, rangeWidth, toFixed;
+            oldValue, rangeWidth, position, toFixed;
 
         // visually hide the input
         applyStyle(element, {
@@ -256,7 +256,6 @@
             rangeWidth     = getDimension(range, 'offsetWidth');
             maxHandleX     = rangeWidth - handleWidth;
             grabX          = handleWidth / 2;
-            position       = getPositionFromValue(oldValue);
             toFixed        = (step + '').replace('.', '').length - 1;
 
             // Consider disabled state
@@ -266,14 +265,14 @@
                 range.classList.remove(options.disabledClass);
             }
 
-            setPosition(position, omitEv);
+            setPosition(getPositionFromValue(oldValue), omitEv);
         }
 
         function handleMove (e) {
             e.preventDefault();
             var posX = getRelativePosition(e);
             range.classList.add('rangeslider__focus');
-            setPosition(posX - grabX);
+            setPosition((posX - grabX) / maxHandleX);
         }
 
         function handleEnd (e) {
@@ -318,36 +317,31 @@
         }
 
         function getPositionFromValue (value) {
-            var percentage, pos;
-            percentage = (value - min)/(max - min);
-            pos = percentage * maxHandleX;
-            return pos;
+            return (value - min) / (max - min);
         }
 
         function getValueFromPosition (pos) {
-            var percentage, value;
-            percentage = ((pos) / (maxHandleX || 1));
-            value = step * Math.round(percentage * (max - min) / step) + min;
+            var value;
+            value = step * Math.round(pos * (max - min) / step) + min;
             return +(value).toFixed(toFixed);
         }
 
         function setPosition (pos, omitEv) {
-            var value, left;
+            var value;
 
             // Snapping steps
-            value = getValueFromPosition(cap(pos, 0, maxHandleX));
-            left = getPositionFromValue(value);
+            value = getValueFromPosition(cap(pos, 0, 1));
+            pos = getPositionFromValue(value);
 
             // Update ui
-            fill.style.width = (left + grabX) + 'px';
-            handle.style.left = left + 'px';
+            fill.style.width = handle.style.left = (pos * 100) + '%';
             setValue(value, omitEv);
 
             // Update globals
-            position = left;
             oldValue = value;
+            position = pos;
 
-            options.onSlide(left, value);
+            options.onSlide(pos, value);
         }
 
         function setValue (value, omitEv) {
@@ -374,8 +368,7 @@
                 return;
             }
 
-            var pos = getPositionFromValue(element.value);
-            setPosition(pos, true);
+            setPosition(getPositionFromValue(element.value), true);
         }
 
         function destroy() {
@@ -403,7 +396,7 @@
                 rangeX  = element.getBoundingClientRect().left,
                 handleX = getPositionFromNode(handle) - rangeX;
 
-            setPosition(posX - grabX);
+            setPosition((posX - grabX) / maxHandleX);
 
             if (posX >= handleX && posX < handleX + handleWidth) {
                 grabX = posX - handleX;
