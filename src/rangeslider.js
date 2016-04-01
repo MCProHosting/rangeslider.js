@@ -34,6 +34,7 @@
             rangeClass: 'rangeslider',
             disabledClass: 'rangeslider--disabled',
             fillClass: 'rangeslider__fill',
+            extraBarClass: 'rangeslider__extra-bar',
             handleClass: 'rangeslider__handle',
             startEvent: ['mousedown', 'touchstart', 'pointerdown'],
             moveEvent: ['mousemove', 'touchmove', 'pointermove'],
@@ -224,10 +225,12 @@
         }
 
         // Add in the elements
-        var range  = createEl('div', { class: options.rangeClass }, 'afterend');
-        var handle = createEl('div', { class: options.handleClass });
-        var fill   = createEl('div', { class: options.fillClass });
+        var range    = createEl('div', { class: options.rangeClass }, 'afterend');
+        var handle   = createEl('div', { class: options.handleClass });
+        var fill     = createEl('div', { class: options.fillClass });
+        var extraBar = createEl('div', { class: options.extraBarClass });
 
+        range.appendChild(extraBar);
         range.appendChild(fill);
         range.appendChild(handle);
         element.parentNode.insertBefore(range, element);
@@ -245,11 +248,14 @@
         });
 
         function update (updateAttributes, omitEv) {
+            var extraBarValue = min;
+
             if (updateAttributes === true) {
-                min      = parseFloat(element.getAttribute('min') || 0);
-                max      = parseFloat(element.getAttribute('max') || 100);
-                oldValue = parseFloat(element.value || min + (max-min)/2);
-                step     = parseFloat(element.getAttribute('step') || 1);
+                min             = parseFloat(element.getAttribute('min') || 0);
+                max             = parseFloat(element.getAttribute('max') || 100);
+                oldValue        = parseFloat(element.value || min + (max-min)/2);
+                extraBarValue   = parseFloat(element.extraBar || element.getAttribute('extra-bar') || min);
+                step            = parseFloat(element.getAttribute('step') || 1);
             }
 
             handleWidth    = getDimension(handle, 'offsetWidth');
@@ -264,8 +270,9 @@
             } else {
                 range.classList.remove(options.disabledClass);
             }
-
+            
             setPosition(getPositionFromValue(oldValue), omitEv);
+            setExtraBarPosition(getPositionFromValue(extraBarValue));
         }
 
         function handleMove (e) {
@@ -342,6 +349,10 @@
             position = pos;
 
             options.onSlide(pos, value);
+        }
+
+        function setExtraBarPosition (pos) {
+            extraBar.style.width = (pos * 100) + '%';
         }
 
         function setValue (value, omitEv) {
