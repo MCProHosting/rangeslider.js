@@ -3,6 +3,8 @@ node_modules
 .sass-cache
 Gemfile.lock
 _site
+.idea/
+npm-debug.log
 
 # Ignore files beginning with a #
 \#*

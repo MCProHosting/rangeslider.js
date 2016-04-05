@@ -1,4 +1,4 @@
-/*! rangeslider.js-mini - v0.0.1 | (c) 2015 @andreruffert | MIT license | https://github.com/MCProHosting/rangeslider.js-mini */
+/*! rangeslider.js-mini - v0.1.0 | (c) 2016 @andreruffert | MIT license | https://github.com/MCProHosting/rangeslider.js-mini */
 (function(factory) {
     'use strict';
 
@@ -35,6 +35,7 @@
             rangeClass: 'rangeslider',
             disabledClass: 'rangeslider--disabled',
             fillClass: 'rangeslider__fill',
+            extraBarClass: 'rangeslider__extra-bar',
             handleClass: 'rangeslider__handle',
             startEvent: ['mousedown', 'touchstart', 'pointerdown'],
             moveEvent: ['mousemove', 'touchmove', 'pointermove'],
@@ -42,6 +43,7 @@
             changeEvent: ['change', 'input'],
             onInit: noop,
             onSlide: noop,
+            onSlideStart: noop,
             onSlideEnd: noop
         };
 
@@ -224,16 +226,18 @@
         }
 
         // Add in the elements
-        var range  = createEl('div', { class: options.rangeClass }, 'afterend');
-        var handle = createEl('div', { class: options.handleClass });
-        var fill   = createEl('div', { class: options.fillClass });
+        var range    = createEl('div', { class: options.rangeClass }, 'afterend');
+        var handle   = createEl('div', { class: options.handleClass });
+        var fill     = createEl('div', { class: options.fillClass });
+        var extraBar = createEl('div', { class: options.extraBarClass });
 
+        range.appendChild(extraBar);
         range.appendChild(fill);
         range.appendChild(handle);
         element.parentNode.insertBefore(range, element);
 
         var grabX, maxHandleX, handleWidth, max, min, step,
-            oldValue, position, rangeWidth, toFixed;
+            oldValue, rangeWidth, position, toFixed;
 
         // visually hide the input
         applyStyle(element, {
@@ -244,19 +248,21 @@
             opacity: '0'
         });
 
-        function update (updateAttributes) {
+        function update (updateAttributes, omitEv) {
+            var extraBarValue = min;
+
             if (updateAttributes === true) {
-                min      = parseFloat(element.getAttribute('min') || 0);
-                max      = parseFloat(element.getAttribute('max') || 100);
-                oldValue = parseFloat(element.value || min + (max-min)/2);
-                step     = parseFloat(element.getAttribute('step') || 1);
+                min             = parseFloat(element.getAttribute('min') || 0);
+                max             = parseFloat(element.getAttribute('max') || 100);
+                oldValue        = parseFloat(element.value || min + (max-min)/2);
+                extraBarValue   = parseFloat(element.extraBar || element.getAttribute('extra-bar') || min);
+                step            = parseFloat(element.getAttribute('step') || 1);
             }
 
             handleWidth    = getDimension(handle, 'offsetWidth');
             rangeWidth     = getDimension(range, 'offsetWidth');
             maxHandleX     = rangeWidth - handleWidth;
             grabX          = handleWidth / 2;
-            position       = getPositionFromValue(oldValue);
             toFixed        = (step + '').replace('.', '').length - 1;
 
             // Consider disabled state
@@ -265,20 +271,23 @@
             } else {
                 range.classList.remove(options.disabledClass);
             }
-
-            setPosition(position);
+            
+            setPosition(getPositionFromValue(oldValue), omitEv);
+            setExtraBarPosition(getPositionFromValue(extraBarValue));
         }
 
         function handleMove (e) {
             e.preventDefault();
             var posX = getRelativePosition(e);
-            setPosition(posX - grabX);
+            range.classList.add('rangeslider__focus');
+            setPosition((posX - grabX) / maxHandleX);
         }
 
         function handleEnd (e) {
             if (e) {
                 e.preventDefault();
             }
+            range.classList.remove('rangeslider__focus');
             unlisten(document, options.moveEvent, handleMove);
             unlisten(document, options.endEvent, handleEnd);
 
@@ -316,36 +325,35 @@
         }
 
         function getPositionFromValue (value) {
-            var percentage, pos;
-            percentage = (value - min)/(max - min);
-            pos = percentage * maxHandleX;
-            return pos;
+            return (value - min) / (max - min);
         }
 
         function getValueFromPosition (pos) {
-            var percentage, value;
-            percentage = ((pos) / (maxHandleX || 1));
-            value = step * Math.round(percentage * (max - min) / step) + min;
+            var value;
+            value = step * Math.round(pos * (max - min) / step) + min;
             return +(value).toFixed(toFixed);
         }
 
         function setPosition (pos, omitEv) {
-            var value, left;
+            var value;
 
             // Snapping steps
-            value = getValueFromPosition(cap(pos, 0, maxHandleX));
-            left = getPositionFromValue(value);
+            value = getValueFromPosition(cap(pos, 0, 1));
+            pos = getPositionFromValue(value);
 
             // Update ui
-            fill.style.width = (left + grabX) + 'px';
-            handle.style.left = left + 'px';
+            fill.style.width = handle.style.left = (pos * 100) + '%';
             setValue(value, omitEv);
 
             // Update globals
-            position = left;
             oldValue = value;
+            position = pos;
 
-            options.onSlide(left, value);
+            options.onSlide(pos, value);
+        }
+
+        function setExtraBarPosition (pos) {
+            extraBar.style.width = (pos * 100) + '%';
         }
 
         function setValue (value, omitEv) {
@@ -372,8 +380,7 @@
                 return;
             }
 
-            var pos = getPositionFromValue(element.value);
-            setPosition(pos, true);
+            setPosition(getPositionFromValue(element.value), true);
         }
 
         function destroy() {
@@ -401,11 +408,13 @@
                 rangeX  = element.getBoundingClientRect().left,
                 handleX = getPositionFromNode(handle) - rangeX;
 
-            setPosition(posX - grabX);
+            setPosition((posX - grabX) / maxHandleX);
 
             if (posX >= handleX && posX < handleX + handleWidth) {
                 grabX = posX - handleX;
             }
+
+            options.onSlideStart();
         });
 
 
