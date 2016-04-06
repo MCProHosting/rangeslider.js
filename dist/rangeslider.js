@@ -1,4 +1,4 @@
-/*! rangeslider.js-mini - v0.1.0 | (c) 2016 @andreruffert | MIT license | https://github.com/MCProHosting/rangeslider.js-mini */
+/*! rangeslider.js-mini - v0.2.0 | (c) 2016 @andreruffert | MIT license | https://github.com/MCProHosting/rangeslider.js-mini */
 (function(factory) {
     'use strict';
 
@@ -271,9 +271,9 @@
             } else {
                 range.classList.remove(options.disabledClass);
             }
-            
+
             setPosition(getPositionFromValue(oldValue), omitEv);
-            setExtraBarPosition(getPositionFromValue(extraBarValue));
+            setExtraBarPosition(getPositionFromValue(cap(extraBarValue, min, max)));
         }
 
         function handleMove (e) {

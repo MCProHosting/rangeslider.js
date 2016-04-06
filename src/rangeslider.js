@@ -270,9 +270,9 @@
             } else {
                 range.classList.remove(options.disabledClass);
             }
-            
+
             setPosition(getPositionFromValue(oldValue), omitEv);
-            setExtraBarPosition(getPositionFromValue(extraBarValue));
+            setExtraBarPosition(getPositionFromValue(cap(extraBarValue, min, max)));
         }
 
         function handleMove (e) {
