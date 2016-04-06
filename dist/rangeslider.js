@@ -1,4 +1,4 @@
-/*! rangeslider.js-mini - v0.2.0 | (c) 2016 @andreruffert | MIT license | https://github.com/MCProHosting/rangeslider.js-mini */
+/*! rangeslider.js-mini - v0.2.1 | (c) 2016 @andreruffert | MIT license | https://github.com/MCProHosting/rangeslider.js-mini */
 (function(factory) {
     'use strict';
 
