@@ -278,7 +278,6 @@
         function handleMove (e) {
             e.preventDefault();
             var posX = getRelativePosition(e);
-            range.classList.add('rangeslider__focus');
             setPosition((posX - grabX) / maxHandleX);
         }
 
@@ -413,6 +412,7 @@
                 grabX = posX - handleX;
             }
 
+            range.classList.add('rangeslider__focus');
             options.onSlideStart();
         });
 
