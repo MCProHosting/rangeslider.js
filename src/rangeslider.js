@@ -92,52 +92,14 @@
     }
 
     /**
-     * Returns dimensions for an element even if it is not visible in the DOM.
+     * Returns width of the specified element.
      *
      * @param  {Element} element
-     * @param  {String}  key     (e.g. offsetWidth …)
      * @return {Number}
      */
-    function getDimension(element, key) {
-        var hiddenParentNodes       = getHiddenParentNodes(element),
-            hiddenParentNodesLength = hiddenParentNodes.length,
-            inlineStyle             = [],
-            dimension               = element[key];
-
-        // Used for native `<details>` elements
-        function toggleOpenProperty(element) {
-            if (typeof element.open !== 'undefined') {
-                element.open = (element.open) ? false : true;
-            }
-        }
-
-        if (hiddenParentNodesLength) {
-            for (var i = 0; i < hiddenParentNodesLength; i++) {
-
-                // Cache style attribute to restore it later.
-                inlineStyle[i] = hiddenParentNodes[i].style.cssText;
-
-                // visually hide
-                applyStyle(hiddenParentNodes[i], {
-                    display: 'block',
-                    height: '0',
-                    overflow: 'hidden',
-                    visibility: 'hidden'
-                });
-                toggleOpenProperty(hiddenParentNodes[i]);
-            }
-
-            // Update dimension
-            dimension = element[key];
-
-            for (var j = 0; j < hiddenParentNodesLength; j++) {
-
-                // Restore the style attribute
-                hiddenParentNodes[j].style.cssText = inlineStyle[j];
-                toggleOpenProperty(hiddenParentNodes[j]);
-            }
-        }
-        return dimension;
+    function getWidth(element) {
+        var rect = element.getBoundingClientRect();
+        return rect.right - rect.left;
     }
 
     /**
@@ -258,9 +220,9 @@
                 step            = parseFloat(element.getAttribute('step') || 1);
             }
 
-            handleWidth    = getDimension(handle, 'offsetWidth');
-            rangeWidth     = getDimension(range, 'offsetWidth');
-            maxHandleX     = rangeWidth - handleWidth;
+            handleWidth    = getWidth(handle);
+            rangeWidth     = getWidth(range);
+            maxHandleX     = rangeWidth;
             grabX          = handleWidth / 2;
             toFixed        = (step + '').replace('.', '').length - 1;
 
@@ -277,8 +239,7 @@
 
         function handleMove (e) {
             e.preventDefault();
-            var posX = getRelativePosition(e);
-            setPosition((posX - grabX) / maxHandleX);
+            setPosition(getRelativePosition(e) / maxHandleX);
         }
 
         function handleEnd (e) {
@@ -292,25 +253,30 @@
             options.onSlideEnd(position, oldValue);
         }
 
-        function getRelativePosition (e) {
-            // Get the offset left relative to the viewport
-            var rangeX  = range.getBoundingClientRect().left,
-                pageX   = 0;
-
+        /**
+         * Returns the X position of a mouse or touch event on the page.
+         * @param  {Event} e
+         * @return {Number}
+         */
+        function getPageX (e) {
             if (!isUndefined(e.pageX)) {
-                pageX = e.pageX;
+                return e.pageX;
             }
-            else if (!isUndefined(e.clientX)) {
-                pageX = e.clientX;
+            if (!isUndefined(e.clientX)) {
+                return e.clientX;
             }
-            else if (e.touches && e.touches[0] && !isUndefined(e.touches[0].clientX)) {
-                pageX = e.touches[0].clientX;
+            if (e.touches && e.touches[0] && !isUndefined(e.touches[0].clientX)) {
+                return e.touches[0].clientX;
             }
-            else if (e.currentPoint && !isUndefined(e.currentPoint.x)) {
-                pageX = e.currentPoint.x;
+            if (e.currentPoint && !isUndefined(e.currentPoint.x)) {
+                return e.currentPoint.x;
             }
 
-            return pageX - rangeX;
+            return 0;
+        }
+
+        function getRelativePosition (e) {
+            return (getPageX(e) + grabX) - range.getBoundingClientRect().left;
         }
 
         function getPositionFromNode (node) {
@@ -402,18 +368,10 @@
             listen(document, options.moveEvent, handleMove);
             listen(document, options.endEvent, handleEnd);
 
-            var posX    = getRelativePosition(e),
-                rangeX  = element.getBoundingClientRect().left,
-                handleX = getPositionFromNode(handle) - rangeX;
-
-            setPosition((posX - grabX) / maxHandleX);
-
-            if (posX >= handleX && posX < handleX + handleWidth) {
-                grabX = posX - handleX;
-            }
-
             range.classList.add('rangeslider__focus');
             options.onSlideStart();
+
+            handleMove(e);
         });
 
 
